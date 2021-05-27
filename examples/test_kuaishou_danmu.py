@@ -2,8 +2,8 @@ import asyncio
 
 from examples.kuaishou.ws_kuaishou_danmu_client import WsDanmuClient
 
-room_id = 'qiming188'
-cookie = 'kuaishou.live.bfb1s=9b8f70844293bed778aade6e0a8f9942; clientid=3; did=web_b6f8677f8da2be1b0d4676a94c935b71; client_key=65890b29; kpn=GAME_ZONE; didv=1621585129979; userId=1683867653; userId=1683867653; kuaishou.live.web_st=ChRrdWFpc2hvdS5saXZlLndlYi5zdBKgAa3fL0oe9btghG0h13myuNfJhdg6kaIQEd8MK3yYWZ9YubmPry75nmVV5IbM2LCHHJMyiq6ZEHP4a0VTQiSrXjyYxpZ94q-kp2utBUMuQd5KeU_upDMuHCW8ujjGGlYHSv7nBGMrvhWdfU-8IiLFIMoFQQRpbxuo1mNbU2sXVw9Cr2iAc9Pg4WS5pebrcEX9JNhfBPHlARsxNpLnDCphqZ4aEurKvNghXkU0vIm_W_UXPUfuwSIgbBoJfmFoSldBiQLUySuekh_XB7FU7kHwfKv3DRbEIh4oBTAB; kuaishou.live.web_ph=a1c15df05aa2bf92e41cf50bd1a96563db2e'
+room_id = '3x5tr2y938qzhx2'
+cookie = ''
 area_id = 0
 
 

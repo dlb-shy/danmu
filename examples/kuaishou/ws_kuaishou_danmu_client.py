@@ -6,12 +6,13 @@ import time
 from pprint import pprint
 from typing import Optional
 from aiohttp import ClientSession
+from loguru import logger
 
 from danmu_abc import WsConn, Client
 from examples.kuaishou.util import MessageDecode
 import blackboxprotobuf
 
-
+logger.add('runtime.log')
 class WsDanmuClient(Client):
     def __init__(
             self, room: str, area_id: int, cookie: str,
@@ -34,8 +35,7 @@ class WsDanmuClient(Client):
             'Host': 'live.kuaishou.com',
             'Origin': 'https://live.kuaishou.com',
             'Referer': 'https://live.kuaishou.com/u/3xpqb3iy87d3nhi',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36',
-
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36'
         }
 
     def get_page_id(self):
@@ -52,26 +52,35 @@ class WsDanmuClient(Client):
         async with ClientSession() as session:
             async with session.get(f'https://live.kuaishou.com/u/{self._room}', headers=self.headers) as resp:
                 room_page = await resp.text()
-                stream_id = re.findall('live-stream-id="(.*?)"', room_page)[0]
-        # 获取token
-        token_url = 'https://live.kuaishou.com/live_graphql'
-        payload = {"operationName":"WebSocketInfoQuery","variables":{"liveStreamId":stream_id},"query":"query WebSocketInfoQuery($liveStreamId: String) {\n  webSocketInfo(liveStreamId: $liveStreamId) {\n    token\n    webSocketUrls\n    __typename\n  }\n}\n"}
-        async with ClientSession() as session:
-            async with session.post(token_url, data=json.dumps(payload), headers=self.headers) as resp:
-                token_json = await resp.json()
-                token = token_json['data']['webSocketInfo']['token']
+                # print(room_page)
+                if '主播尚未开播' not in room_page:
+                    stream_id = re.findall('live-stream-id="(.*?)"', room_page)[0]
+                    print(stream_id)
+                else:
+                    stream_id = ''
+                    logger.info('主播尚未开播')
+        if stream_id:
+            # 获取token
+            token_url = 'https://live.kuaishou.com/live_graphql'
+            payload = {"operationName":"WebSocketInfoQuery","variables":{"liveStreamId":stream_id},"query":"query WebSocketInfoQuery($liveStreamId: String) {\n  webSocketInfo(liveStreamId: $liveStreamId) {\n    token\n    webSocketUrls\n    __typename\n  }\n}\n"}
+            async with ClientSession() as session:
+                async with session.post(token_url, data=json.dumps(payload), headers=self.headers) as resp:
+                    token_json = await resp.json()
+                    token = token_json['data']['webSocketInfo']['token']
 
-        part1 = [0x08, 0xC8, 0x01, 0x1A, 0xDC, 0x01, 0x0A, 0xAC, 0x01]  # 可能与版本有关
-        part2 = [ord(c) for c in token]
-        part3 = [0x12, 0x0B]
-        part4 = [ord(c) for c in stream_id]
-        part5 = [0x3A, 0x1E]
-        page_id = self.get_page_id()
-        part6 = [ord(c) for c in page_id]
-        d = part1 + part2 + part3 + part4 + part5 + part6
-        # print(bytes(d))
+            part1 = [0x08, 0xC8, 0x01, 0x1A, 0xDC, 0x01, 0x0A, 0xAC, 0x01]  # 可能与版本有关
+            part2 = [ord(c) for c in token]
+            part3 = [0x12, 0x0B]
+            part4 = [ord(c) for c in stream_id]
+            part5 = [0x3A, 0x1E]
+            page_id = self.get_page_id()
+            part6 = [ord(c) for c in page_id]
+            d = part1 + part2 + part3 + part4 + part5 + part6
+            # print(bytes(d))
 
-        return await self._conn.send_bytes(bytes(d))
+            return await self._conn.send_bytes(bytes(d))
+        else:
+            print('')
 
     async def _one_heartbeat(self) -> bool:
         head = [0x08, 0x01, 0x1A, 0x07, 0x08]
@@ -100,9 +109,9 @@ class WsDanmuClient(Client):
                         for reply in reply_list:
 
                             if '2' in reply.keys():
-                                print(reply["2"]["2"] + ': ' + reply["3"])
+                                logger.info(reply["2"]["2"] + ': ' + reply["3"])
                     else:
-                        print(reply_list["2"]["2"] + ': ' + reply_list["3"])
+                        logger.info(reply_list["2"]["2"] + ': ' + reply_list["3"])
         except Exception as e:
             pprint(message)
             print(e)
